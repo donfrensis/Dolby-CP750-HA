@@ -2,6 +2,9 @@
 import asyncio
 from typing import Final
 
+# Domain
+DOMAIN: Final = "dolby_cp750"
+
 # Available input sources
 INPUT_SOURCES: Final = {
     "dig_1": "Digital 1",
