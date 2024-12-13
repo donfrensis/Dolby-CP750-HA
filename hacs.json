@@ -1,0 +1,8 @@
+{
+    "name": "Dolby CP750",
+    "render_readme": true,
+    "content_in_root": false,
+    "domains": ["dolby_cp750"],
+    "homeassistant": "2024.1.0",
+    "iot_class": "Local Polling"
+  }

@@ -1,0 +1,28 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Dolby CP750 Setup",
+                "description": "Set up your Dolby CP750 connection",
+                "data": {
+                    "host": "IP Address",
+                    "port": "Port",
+                    "name": "Name"
+                }
+            },
+            "power_switch": {
+                "title": "Power Switch (Optional)",
+                "description": "Select a switch that controls power to your CP750. Leave empty if you don't have one.",
+                "data": {
+                    "power_switch": "Power Switch"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to the device"
+        },
+        "abort": {
+            "already_configured": "Device is already configured"
+        }
+    }
+}
