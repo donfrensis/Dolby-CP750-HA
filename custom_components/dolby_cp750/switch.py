@@ -61,7 +61,7 @@ class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
     ) -> None:
         """Initialize the mute switch."""
         super().__init__(coordinator)
-        self._attr_name = f"{name} Mute"
+        self._attr_name = "Mute"
         self._attr_unique_id = f"{unique_id}_mute"
         
         self._attr_device_info = DeviceInfo(
@@ -110,7 +110,7 @@ class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
     ) -> None:
         """Initialize the power switch."""
         super().__init__(coordinator)
-        self._attr_name = f"{name} Power"
+        self._attr_name = "Power"
         self._attr_unique_id = f"{unique_id}_power"
         self._power_switch = power_switch
         self._hass = hass

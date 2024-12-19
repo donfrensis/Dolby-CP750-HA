@@ -49,7 +49,7 @@ class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
     ) -> None:
         """Initialize the fader control."""
         super().__init__(coordinator)
-        self._attr_name = f"{name} Fader"
+        self._attr_name = "Fader"
         self._attr_unique_id = f"{unique_id}_fader"
         
         self._attr_device_info = DeviceInfo(

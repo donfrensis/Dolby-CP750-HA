@@ -48,7 +48,7 @@ class DolbyCP750InputSelect(CoordinatorEntity, SelectEntity):
     ) -> None:
         """Initialize the input selector."""
         super().__init__(coordinator)
-        self._attr_name = f"{name} Input"
+        self._attr_name = "Input"
         self._attr_unique_id = f"{unique_id}_input"
         self._attr_options = list(INPUT_SOURCES.values())
         
