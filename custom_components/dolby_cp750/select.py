@@ -7,6 +7,7 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -14,6 +15,7 @@ from .const import (
     DolbyCP750Protocol,
     INPUT_SOURCES,
 )
+from .coordinator import DolbyCP750Coordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +34,17 @@ async def async_setup_entry(
         config.get("power_switch")
     )
     
+    coordinator = DolbyCP750Coordinator(
+        hass,
+        protocol,
+        config["name"]
+    )
+
+    # Fetch initial data
+    await coordinator.async_config_entry_first_refresh()
+    
     entity = DolbyCP750InputSelect(
+        coordinator,
         config["name"],
         protocol,
         config_entry.unique_id or config["host"]
@@ -40,19 +52,24 @@ async def async_setup_entry(
     
     async_add_entities([entity])
 
-class DolbyCP750InputSelect(SelectEntity):
+class DolbyCP750InputSelect(CoordinatorEntity, SelectEntity):
     """Input selector for Dolby CP750."""
 
     _attr_has_entity_name = True
-    _attr_should_poll = True
 
-    def __init__(self, name: str, protocol: DolbyCP750Protocol, unique_id: str) -> None:
+    def __init__(
+        self, 
+        coordinator: DolbyCP750Coordinator,
+        name: str, 
+        protocol: DolbyCP750Protocol, 
+        unique_id: str
+    ) -> None:
         """Initialize the input selector."""
+        super().__init__(coordinator)
         self._attr_name = f"{name} Input"
         self._protocol = protocol
         self._attr_unique_id = f"{unique_id}_input"
         self._attr_options = list(INPUT_SOURCES.values())
-        self._current = list(INPUT_SOURCES.values())[0]
         
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, unique_id)},
@@ -63,14 +80,13 @@ class DolbyCP750InputSelect(SelectEntity):
         )
 
     @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self._protocol.available
-
-    @property
     def current_option(self) -> str | None:
         """Return the current input source."""
-        return self._current
+        if self.coordinator.data:
+            input_key = self.coordinator.data.get("input")
+            if input_key:
+                return INPUT_SOURCES.get(input_key)
+        return None
 
     async def async_select_option(self, option: str) -> None:
         """Change input source."""
@@ -78,36 +94,7 @@ class DolbyCP750InputSelect(SelectEntity):
             if value == option:
                 try:
                     await self._protocol.send_command(f"cp750.sys.input_mode {key}")
-                    self._current = option
+                    await self.coordinator.async_request_refresh()
                 except Exception as err:
                     _LOGGER.error("Failed to set input: %s", err)
                 break
-
-#    async def async_update(self) -> None:
-#        """Update the current input."""
-#        try:
-#            response = await self._protocol.send_command("cp750.sys.input_mode ?")
-#            input_key = response.split()[-1]  # Prendiamo l'ultima parte
-#            self._current = INPUT_SOURCES.get(input_key, input_key)
-#        except Exception as err:
-#            _LOGGER.error("Failed to update input: %s", err)
-
-    async def async_update(self) -> None:
-        """Update the current input."""
-        try:
-            response = await self._protocol.send_command("cp750.sys.input_mode ?")
-            _LOGGER.debug("Input response: %s", response)
-        
-            # La risposta dovrebbe essere tipo "cp750.sys.input_mode dig_1"
-            parts = response.split()
-            if len(parts) >= 2 and parts[0] == "cp750.sys.input_mode":
-                input_key = parts[-1]
-                if input_key in INPUT_SOURCES:
-                    self._current = INPUT_SOURCES[input_key]
-                    _LOGGER.debug("Valid input found: %s -> %s", input_key, self._current)
-                else:
-                    _LOGGER.warning("Unknown input value received: %s", input_key)
-            else:
-                _LOGGER.warning("Unexpected input response format: %s", response)
-        except Exception as err:
-            _LOGGER.error("Failed to update input: %s", err)            

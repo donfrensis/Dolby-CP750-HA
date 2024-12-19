@@ -7,12 +7,14 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     DOMAIN,
     DolbyCP750Protocol,
 )
+from .coordinator import DolbyCP750Coordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +33,17 @@ async def async_setup_entry(
         config.get("power_switch")
     )
     
+    coordinator = DolbyCP750Coordinator(
+        hass,
+        protocol,
+        config["name"]
+    )
+
+    # Fetch initial data
+    await coordinator.async_config_entry_first_refresh()
+    
     entity = DolbyCP750Fader(
+        coordinator,
         config["name"],
         protocol,
         config_entry.unique_id or config["host"]
@@ -39,23 +51,27 @@ async def async_setup_entry(
     
     async_add_entities([entity])
 
-class DolbyCP750Fader(NumberEntity):
+class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
     """Fader control for Dolby CP750."""
 
     _attr_has_entity_name = True
-    _attr_should_poll = True
     _attr_native_min_value = 0
     _attr_native_max_value = 100
     _attr_native_step = 1
-    _attr_native_unit_of_measurement = "dB"
     _attr_mode = NumberMode.SLIDER
 
-    def __init__(self, name: str, protocol: DolbyCP750Protocol, unique_id: str) -> None:
+    def __init__(
+        self, 
+        coordinator: DolbyCP750Coordinator,
+        name: str, 
+        protocol: DolbyCP750Protocol, 
+        unique_id: str
+    ) -> None:
         """Initialize the fader control."""
+        super().__init__(coordinator)
         self._attr_name = f"{name} Fader"
         self._protocol = protocol
         self._attr_unique_id = f"{unique_id}_fader"
-        self._value = -90.0
         
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, unique_id)},
@@ -66,50 +82,18 @@ class DolbyCP750Fader(NumberEntity):
         )
 
     @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self._protocol.available
-
-    @property
-    def native_value(self) -> float:
+    def native_value(self) -> float | None:
         """Return the current fader value."""
-        return self._value
+        if self.coordinator.data:
+            return self.coordinator.data.get("fader")
+        return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the fader level."""
         try:
-            await self._protocol.send_command(f"cp750.sys.fader {value}")
-            self._value = value
+            # Assicuriamoci che il valore sia un intero nel range corretto
+            int_value = round(max(0, min(100, value)))
+            await self._protocol.send_command(f"cp750.sys.fader {int_value}")
+            await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set fader: %s", err)
-
-#    async def async_update(self) -> None:
-#        """Update the current fader value."""
-#        try:
-#            response = await self._protocol.send_command("cp750.sys.fader ?")
-#            self._value = float(response.split()[-1])
-#        except Exception as err:
-#            _LOGGER.error("Failed to update fader: %s", err)
-
-    async def async_update(self) -> None:
-        """Update the current fader value."""
-        try:
-            response = await self._protocol.send_command("cp750.sys.fader ?")
-            _LOGGER.debug("Fader response: %s", response)
-        
-            # La risposta dovrebbe essere tipo "cp750.sys.fader 75"
-            parts = response.split()
-            if len(parts) >= 2 and parts[0] == "cp750.sys.fader":
-                try:
-                    value = float(parts[-1])
-                    if 0 <= value <= 100:
-                        self._value = value
-                        _LOGGER.debug("Valid fader value: %s", value)
-                    else:
-                        _LOGGER.warning("Fader value out of range: %s", value)
-                except ValueError:
-                    _LOGGER.warning("Invalid fader value: %s", parts[-1])
-            else:
-                _LOGGER.warning("Unexpected fader response format: %s", response)
-        except Exception as err:
-            _LOGGER.error("Failed to update fader: %s", err)
