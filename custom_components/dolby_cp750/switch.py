@@ -11,11 +11,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.const import STATE_ON
 
-from .const import (
-    DOMAIN,
-    DolbyCP750Protocol,
-)
-from .coordinator import DolbyCP750Coordinator
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,41 +21,26 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Dolby CP750 switches."""
-    config = hass.data[DOMAIN][config_entry.entry_id]
-    
-    protocol = DolbyCP750Protocol(
-        hass,
-        config["host"], 
-        config["port"],
-        config.get("power_switch")
-    )
-    
-    coordinator = DolbyCP750Coordinator(
-        hass,
-        protocol,
-        config["name"]
-    )
-
-    # Fetch initial data
-    await coordinator.async_config_entry_first_refresh()
+    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+    name = hass.data[DOMAIN][config_entry.entry_id]["name"]
+    power_switch = hass.data[DOMAIN][config_entry.entry_id]["power_switch"]
+    unique_id = config_entry.unique_id or config_entry.entry_id
     
     entities = [
         DolbyCP750Mute(
             coordinator,
-            config["name"],
-            protocol,
-            config_entry.unique_id or config["host"]
+            name,
+            unique_id
         )
     ]
 
     # Add power switch if configured
-    if power_switch := config.get("power_switch"):
+    if power_switch:
         entities.append(
             DolbyCP750Power(
                 coordinator,
-                config["name"],
-                protocol,
-                config_entry.unique_id or config["host"],
+                name,
+                unique_id,
                 power_switch,
                 hass
             )
@@ -74,15 +55,13 @@ class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
 
     def __init__(
         self, 
-        coordinator: DolbyCP750Coordinator,
+        coordinator,
         name: str, 
-        protocol: DolbyCP750Protocol, 
         unique_id: str,
     ) -> None:
         """Initialize the mute switch."""
         super().__init__(coordinator)
         self._attr_name = f"{name} Mute"
-        self._protocol = protocol
         self._attr_unique_id = f"{unique_id}_mute"
         
         self._attr_device_info = DeviceInfo(
@@ -90,7 +69,7 @@ class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{protocol.host}",
+            configuration_url=f"http://{coordinator.protocol.host}",
         )
 
     @property
@@ -103,7 +82,7 @@ class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs) -> None:
         """Turn on mute."""
         try:
-            await self._protocol.send_command("cp750.sys.mute 1")
+            await self.coordinator.protocol.send_command("cp750.sys.mute 1")
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to turn on mute: %s", err)
@@ -111,7 +90,7 @@ class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs) -> None:
         """Turn off mute."""
         try:
-            await self._protocol.send_command("cp750.sys.mute 0")
+            await self.coordinator.protocol.send_command("cp750.sys.mute 0")
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to turn off mute: %s", err)
@@ -123,9 +102,8 @@ class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
 
     def __init__(
         self, 
-        coordinator: DolbyCP750Coordinator,
+        coordinator,
         name: str, 
-        protocol: DolbyCP750Protocol, 
         unique_id: str,
         power_switch: str,
         hass: HomeAssistant,
@@ -133,7 +111,6 @@ class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
         """Initialize the power switch."""
         super().__init__(coordinator)
         self._attr_name = f"{name} Power"
-        self._protocol = protocol
         self._attr_unique_id = f"{unique_id}_power"
         self._power_switch = power_switch
         self._hass = hass
@@ -143,7 +120,7 @@ class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{protocol.host}",
+            configuration_url=f"http://{coordinator.protocol.host}",
         )
 
     @property

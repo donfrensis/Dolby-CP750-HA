@@ -23,14 +23,29 @@ DEFAULT_NAME: Final = "Dolby CP750"
 DEFAULT_PORT: Final = 61408
 
 # Definiamo le piattaforme utilizzate dall'integrazione
-PLATFORMS: list[Platform] = ["select", "number", "switch"]
+PLATFORMS: list[Platform] = ["select", "number", "switch", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Dolby CP750 from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+
+    # Create protocol and coordinator
+    protocol = DolbyCP750Protocol(
+        hass,
+        entry.data[CONF_HOST],
+        entry.data.get(CONF_PORT, DEFAULT_PORT),
+        entry.data.get("power_switch")
+    )
+    
+    coordinator = DolbyCP750Coordinator(
+        hass,
+        protocol,
+        entry.data.get(CONF_NAME, DEFAULT_NAME)
+    )
     
     # Memorizza i dati di configurazione
     hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
         "host": entry.data[CONF_HOST],
         "port": entry.data.get(CONF_PORT, DEFAULT_PORT),
         "name": entry.data.get(CONF_NAME, DEFAULT_NAME),

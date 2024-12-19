@@ -10,11 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import ConfigType
 
-from .const import (
-    DOMAIN,
-    DolbyCP750Protocol,
-)
-from .coordinator import DolbyCP750Coordinator
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,29 +20,14 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Dolby CP750 fader control."""
-    config = hass.data[DOMAIN][config_entry.entry_id]
-    
-    protocol = DolbyCP750Protocol(
-        hass,
-        config["host"], 
-        config["port"],
-        config.get("power_switch")
-    )
-    
-    coordinator = DolbyCP750Coordinator(
-        hass,
-        protocol,
-        config["name"]
-    )
-
-    # Fetch initial data
-    await coordinator.async_config_entry_first_refresh()
+    coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
+    name = hass.data[DOMAIN][config_entry.entry_id]["name"]
+    unique_id = config_entry.unique_id or config_entry.entry_id
     
     entity = DolbyCP750Fader(
         coordinator,
-        config["name"],
-        protocol,
-        config_entry.unique_id or config["host"]
+        name,
+        unique_id
     )
     
     async_add_entities([entity])
@@ -62,15 +43,13 @@ class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
 
     def __init__(
         self, 
-        coordinator: DolbyCP750Coordinator,
+        coordinator,
         name: str, 
-        protocol: DolbyCP750Protocol, 
         unique_id: str
     ) -> None:
         """Initialize the fader control."""
         super().__init__(coordinator)
         self._attr_name = f"{name} Fader"
-        self._protocol = protocol
         self._attr_unique_id = f"{unique_id}_fader"
         
         self._attr_device_info = DeviceInfo(
@@ -78,7 +57,7 @@ class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{protocol.host}",
+            configuration_url=f"http://{coordinator.protocol.host}",
         )
 
     @property
@@ -93,7 +72,7 @@ class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
         try:
             # Assicuriamoci che il valore sia un intero nel range corretto
             int_value = round(max(0, min(100, value)))
-            await self._protocol.send_command(f"cp750.sys.fader {int_value}")
+            await self.coordinator.protocol.send_command(f"cp750.sys.fader {int_value}")
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set fader: %s", err)

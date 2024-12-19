@@ -74,37 +74,6 @@ class DolbyCP750Protocol:
             self._reader = None
         self._connected = False
 
-#    async def send_command(self, command: str) -> str:
-#        """Send command and return response.
-#        
-#        The CP750 has a simple ASCII protocol:
-#        - Commands are not case sensitive
-#        - Whitespace is ignored
-#        - No error messages are generated
-#        - Device responds by repeating the command or value
-#        - No special protocol overhead (no CRC, sync bytes, etc)
-#        """
-#        if not await self._check_power_switch():
-#            self._connected = False
-#            raise ConnectionError("Device is powered off")
-#
-#        if not self._writer:
-#            await self.connect()
-#
-#        try:
-#            # Send command with newline
-#            self._writer.write(f"{command}\r\n".encode())
-#            await self._writer.drain()
-#
-#            # Read response - device simply echoes valid commands
-#            # or returns parameter status
-#            response = await asyncio.wait_for(self._reader.readline(), timeout=2.0)
-#            self._connected = True
-#            return response.decode().strip()
-#        except Exception as err:
-#            self._connected = False
-#            await self.disconnect()
-#            raise ConnectionError(f"Command failed: {err}")
     async def send_command(self, command: str) -> str:
         """Send command and return response."""
         if not await self._check_power_switch():
