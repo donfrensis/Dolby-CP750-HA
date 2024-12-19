@@ -99,7 +99,7 @@ class DolbyCP750Fader(NumberEntity):
         
             # La risposta dovrebbe essere tipo "cp750.sys.fader 75"
             parts = response.split()
-            if len(parts) >= 3 and parts[0] == "cp750.sys.fader":
+            if len(parts) >= 2 and parts[0] == "cp750.sys.fader":
                 try:
                     value = float(parts[-1])
                     if 0 <= value <= 100:

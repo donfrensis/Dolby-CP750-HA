@@ -102,7 +102,7 @@ class DolbyCP750Mute(SwitchEntity):
         
             # La risposta dovrebbe essere tipo "cp750.sys.mute 1"
             parts = response.split()
-            if len(parts) >= 3 and parts[0] == "cp750.sys.mute":
+            if len(parts) >= 2 and parts[0] == "cp750.sys.mute":
                 value = parts[-1]
                 if value in ["0", "1"]:
                     self._is_on = value == "1"

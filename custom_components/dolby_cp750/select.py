@@ -100,7 +100,7 @@ class DolbyCP750InputSelect(SelectEntity):
         
             # La risposta dovrebbe essere tipo "cp750.sys.input_mode dig_1"
             parts = response.split()
-            if len(parts) >= 3 and parts[0] == "cp750.sys.input_mode":
+            if len(parts) >= 2 and parts[0] == "cp750.sys.input_mode":
                 input_key = parts[-1]
                 if input_key in INPUT_SOURCES:
                     self._current = INPUT_SOURCES[input_key]
