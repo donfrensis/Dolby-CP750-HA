@@ -57,7 +57,7 @@ class DolbyCP750DigitalInput(CoordinatorEntity, BinarySensorEntity):
         self._input_number = input_number
         self._attr_name = f"Digital {input_number} Valid"
         self._attr_unique_id = f"{unique_id}_dig_{input_number}_valid"
-        self._attr_device_class = BinarySensorDeviceClass.SIGNAL
+        self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, unique_id)},
