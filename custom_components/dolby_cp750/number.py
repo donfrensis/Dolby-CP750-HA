@@ -44,9 +44,9 @@ class DolbyCP750Fader(NumberEntity):
 
     _attr_has_entity_name = True
     _attr_should_poll = True
-    _attr_native_min_value = -90.0
-    _attr_native_max_value = 10.0
-    _attr_native_step = 0.5
+    _attr_native_min_value = 0
+    _attr_native_max_value = 100
+    _attr_native_step = 1
     _attr_native_unit_of_measurement = "dB"
     _attr_mode = NumberMode.SLIDER
 
@@ -83,10 +83,33 @@ class DolbyCP750Fader(NumberEntity):
         except Exception as err:
             _LOGGER.error("Failed to set fader: %s", err)
 
+#    async def async_update(self) -> None:
+#        """Update the current fader value."""
+#        try:
+#            response = await self._protocol.send_command("cp750.sys.fader ?")
+#            self._value = float(response.split()[-1])
+#        except Exception as err:
+#            _LOGGER.error("Failed to update fader: %s", err)
+
     async def async_update(self) -> None:
         """Update the current fader value."""
         try:
             response = await self._protocol.send_command("cp750.sys.fader ?")
-            self._value = float(response.split()[-1])
+            _LOGGER.debug("Fader response: %s", response)
+        
+            # La risposta dovrebbe essere tipo "cp750.sys.fader 75"
+            parts = response.split()
+            if len(parts) >= 3 and parts[0] == "cp750.sys.fader":
+                try:
+                    value = float(parts[-1])
+                    if 0 <= value <= 100:
+                        self._value = value
+                        _LOGGER.debug("Valid fader value: %s", value)
+                    else:
+                        _LOGGER.warning("Fader value out of range: %s", value)
+                except ValueError:
+                    _LOGGER.warning("Invalid fader value: %s", parts[-1])
+            else:
+                _LOGGER.warning("Unexpected fader response format: %s", response)
         except Exception as err:
             _LOGGER.error("Failed to update fader: %s", err)

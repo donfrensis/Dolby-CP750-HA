@@ -83,11 +83,31 @@ class DolbyCP750InputSelect(SelectEntity):
                     _LOGGER.error("Failed to set input: %s", err)
                 break
 
+#    async def async_update(self) -> None:
+#        """Update the current input."""
+#        try:
+#            response = await self._protocol.send_command("cp750.sys.input_mode ?")
+#            input_key = response.split()[-1]  # Prendiamo l'ultima parte
+#            self._current = INPUT_SOURCES.get(input_key, input_key)
+#        except Exception as err:
+#            _LOGGER.error("Failed to update input: %s", err)
+
     async def async_update(self) -> None:
         """Update the current input."""
         try:
             response = await self._protocol.send_command("cp750.sys.input_mode ?")
-            input_key = response.split()[-1]  # Prendiamo l'ultima parte
-            self._current = INPUT_SOURCES.get(input_key, input_key)
+            _LOGGER.debug("Input response: %s", response)
+        
+            # La risposta dovrebbe essere tipo "cp750.sys.input_mode dig_1"
+            parts = response.split()
+            if len(parts) >= 3 and parts[0] == "cp750.sys.input_mode":
+                input_key = parts[-1]
+                if input_key in INPUT_SOURCES:
+                    self._current = INPUT_SOURCES[input_key]
+                    _LOGGER.debug("Valid input found: %s -> %s", input_key, self._current)
+                else:
+                    _LOGGER.warning("Unknown input value received: %s", input_key)
+            else:
+                _LOGGER.warning("Unexpected input response format: %s", response)
         except Exception as err:
-            _LOGGER.error("Failed to update input: %s", err)
+            _LOGGER.error("Failed to update input: %s", err)            

@@ -86,10 +86,30 @@ class DolbyCP750Mute(SwitchEntity):
         except Exception as err:
             _LOGGER.error("Failed to turn off mute: %s", err)
 
+#    async def async_update(self) -> None:
+#        """Update the current mute state."""
+#        try:
+#            response = await self._protocol.send_command("cp750.sys.mute ?")
+#            self._is_on = response.split()[-1] == "1"
+#        except Exception as err:
+#            _LOGGER.error("Failed to update mute: %s", err)
+
     async def async_update(self) -> None:
         """Update the current mute state."""
         try:
             response = await self._protocol.send_command("cp750.sys.mute ?")
-            self._is_on = response.split()[-1] == "1"
+            _LOGGER.debug("Mute response: %s", response)
+        
+            # La risposta dovrebbe essere tipo "cp750.sys.mute 1"
+            parts = response.split()
+            if len(parts) >= 3 and parts[0] == "cp750.sys.mute":
+                value = parts[-1]
+                if value in ["0", "1"]:
+                    self._is_on = value == "1"
+                    _LOGGER.debug("Valid mute value: %s -> %s", value, self._is_on)
+                else:
+                    _LOGGER.warning("Invalid mute value: %s", value)
+            else:
+                _LOGGER.warning("Unexpected mute response format: %s", response)
         except Exception as err:
             _LOGGER.error("Failed to update mute: %s", err)
