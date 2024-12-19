@@ -23,7 +23,7 @@ DEFAULT_NAME: Final = "Dolby CP750"
 DEFAULT_PORT: Final = 61408
 
 # Definiamo le piattaforme utilizzate dall'integrazione
-PLATFORMS: list[Platform] = ["entity"]
+PLATFORMS: list[Platform] = ["select", "number", "switch"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Dolby CP750 from a config entry."""
