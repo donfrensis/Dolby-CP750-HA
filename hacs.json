@@ -2,7 +2,5 @@
   "name": "Dolby CP750",
   "content_in_root": false,
   "render_readme": true,
-  "domain": "dolby_cp750",
-  "homeassistant": "2023.12.0",
-  "iot_class": "Local Polling"
+  "homeassistant": "2023.12.0"
 }
