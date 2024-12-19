@@ -87,6 +87,6 @@ class DolbyCP750Fader(NumberEntity):
         """Update the current fader value."""
         try:
             response = await self._protocol.send_command("cp750.sys.fader ?")
-            self._value = float(response.split()[1])
+            self._value = float(response.split()[-1])
         except Exception as err:
             _LOGGER.error("Failed to update fader: %s", err)

@@ -13,13 +13,13 @@ DOMAIN: Final = "dolby_cp750"
 
 # Available input sources
 INPUT_SOURCES: Final = {
+    "analog": "Multi-Ch Analog",
     "dig_1": "Digital 1",
-    "dig_2": "Digital 2",
+    "dig_2": "Digital 2", 
     "dig_3": "Digital 3",
     "dig_4": "Digital 4",
-    "analog": "Multi-Ch Analog",
-    "non_sync": "NonSync",
     "mic": "Mic",
+    "non_sync": "NonSync"
 }
 
 class DolbyCP750Protocol:
@@ -38,12 +38,12 @@ class DolbyCP750Protocol:
     async def _check_power_switch(self) -> bool:
         """Check if power switch is on (if configured)."""
         if not self._power_switch:
-            return True  # No switch configured, assume powered
+            return True
         
         power_state = self.hass.states.get(self._power_switch)
         if not power_state:
             _LOGGER.warning("Configured power switch %s not found", self._power_switch)
-            return True  # Switch not found, assume powered
+            return True
         
         return power_state.state == STATE_ON
 
@@ -54,16 +54,12 @@ class DolbyCP750Protocol:
 
     async def connect(self) -> None:
         """Establish connection to the device."""
-        # First check power switch if configured
         if not await self._check_power_switch():
             self._connected = False
-            raise ConnectionError("Device is powered off")
+            return
 
         try:
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port),
-                timeout=2.0
-            )
+            self._reader, self._writer = await asyncio.open_connection(self.host, self.port)
             self._connected = True
         except Exception as err:
             self._connected = False
@@ -79,8 +75,15 @@ class DolbyCP750Protocol:
         self._connected = False
 
     async def send_command(self, command: str) -> str:
-        """Send command and return response."""
-        # First check power
+        """Send command and return response.
+        
+        The CP750 has a simple ASCII protocol:
+        - Commands are not case sensitive
+        - Whitespace is ignored
+        - No error messages are generated
+        - Device responds by repeating the command or value
+        - No special protocol overhead (no CRC, sync bytes, etc)
+        """
         if not await self._check_power_switch():
             self._connected = False
             raise ConnectionError("Device is powered off")
@@ -89,8 +92,12 @@ class DolbyCP750Protocol:
             await self.connect()
 
         try:
+            # Send command with newline
             self._writer.write(f"{command}\r\n".encode())
             await self._writer.drain()
+
+            # Read response - device simply echoes valid commands
+            # or returns parameter status
             response = await asyncio.wait_for(self._reader.readline(), timeout=2.0)
             self._connected = True
             return response.decode().strip()

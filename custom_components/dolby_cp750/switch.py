@@ -90,6 +90,6 @@ class DolbyCP750Mute(SwitchEntity):
         """Update the current mute state."""
         try:
             response = await self._protocol.send_command("cp750.sys.mute ?")
-            self._is_on = response.split()[1] == "1"
+            self._is_on = response.split()[-1] == "1"
         except Exception as err:
             _LOGGER.error("Failed to update mute: %s", err)

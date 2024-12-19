@@ -87,7 +87,7 @@ class DolbyCP750InputSelect(SelectEntity):
         """Update the current input."""
         try:
             response = await self._protocol.send_command("cp750.sys.input_mode ?")
-            input_key = response.split()[1]
+            input_key = response.split()[-1]  # Prendiamo l'ultima parte
             self._current = INPUT_SOURCES.get(input_key, input_key)
         except Exception as err:
             _LOGGER.error("Failed to update input: %s", err)
