@@ -16,13 +16,15 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 
+from .const import DOMAIN, DolbyCP750Protocol  # Aggiungiamo l'importazione qui
+from .coordinator import DolbyCP750Coordinator # Aggiungiamo anche questa
+
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN: Final = "dolby_cp750"
-DEFAULT_NAME: Final = "Dolby CP750"
+DEFAULT_NAME: Final = "Dolby CP750" 
 DEFAULT_PORT: Final = 61408
 
-# Definiamo le piattaforme utilizzate dall'integrazione
 PLATFORMS: list[Platform] = ["select", "number", "switch", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -43,26 +45,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data.get(CONF_NAME, DEFAULT_NAME)
     )
     
-    # Memorizza i dati di configurazione
+    # Store configuration data
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
         "host": entry.data[CONF_HOST],
         "port": entry.data.get(CONF_PORT, DEFAULT_PORT),
         "name": entry.data.get(CONF_NAME, DEFAULT_NAME),
-        "power_switch": entry.data.get("power_switch"),  # Opzionale
+        "power_switch": entry.data.get("power_switch"),
     }
 
-    # Carica le piattaforme
+    # Load platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    # Scarica le piattaforme
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     
-    # Rimuove i dati dell'entry
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
