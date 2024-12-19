@@ -36,7 +36,7 @@ class DolbyCP750ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _test_connection(self, host: str, port: int) -> bool:
         """Test if we can connect to the CP750."""
         try:
-            protocol = DolbyCP750Protocol(host, port)
+            protocol = DolbyCP750Protocol(self.hass, host, port)
             await protocol.connect()
             await protocol.disconnect()
             return True
