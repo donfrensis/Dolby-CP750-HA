@@ -67,7 +67,54 @@ async def async_setup_entry(
     
     async_add_entities(entities)
 
-[... DolbyCP750Mute class remains unchanged ...]
+class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
+    """Mute switch for Dolby CP750."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self, 
+        coordinator: DolbyCP750Coordinator,
+        name: str, 
+        protocol: DolbyCP750Protocol, 
+        unique_id: str,
+    ) -> None:
+        """Initialize the mute switch."""
+        super().__init__(coordinator)
+        self._attr_name = f"{name} Mute"
+        self._protocol = protocol
+        self._attr_unique_id = f"{unique_id}_mute"
+        
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, unique_id)},
+            name=name,
+            manufacturer="Dolby",
+            model="CP750",
+            configuration_url=f"http://{protocol.host}",
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if mute is on."""
+        if self.coordinator.data:
+            return self.coordinator.data.get("mute")
+        return None
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn on mute."""
+        try:
+            await self._protocol.send_command("cp750.sys.mute 1")
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to turn on mute: %s", err)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn off mute."""
+        try:
+            await self._protocol.send_command("cp750.sys.mute 0")
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to turn off mute: %s", err)
 
 class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
     """Power switch for Dolby CP750."""
