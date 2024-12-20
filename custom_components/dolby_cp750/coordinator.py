@@ -7,6 +7,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     CoordinatorEntity,
 )
+from homeassistant.exceptions import UpdateFailed
 
 from .const import DOMAIN, DolbyCP750Protocol
 
@@ -35,16 +36,9 @@ class DolbyCP750Coordinator(DataUpdateCoordinator):
         """Fetch data from CP750."""
         # Prima controlla se il dispositivo è acceso
         if not await self.protocol._check_power_switch():
-            # Se è spento, restituisci None per tutti i valori senza generare errori
-            return {
-                "fader": None,
-                "input": None,
-                "mute": None,
-                "dig_1_valid": None,
-                "dig_2_valid": None,
-                "dig_3_valid": None,
-                "dig_4_valid": None,
-            }
+            # Se è spento, solleva UpdateFailed senza errore nei log
+            # Questo farà passare tutte le entità a "non disponibile"
+            raise UpdateFailed("Device is powered off")
 
         try:
             # Se è acceso, procedi con il normale aggiornamento
@@ -64,5 +58,5 @@ class DolbyCP750Coordinator(DataUpdateCoordinator):
 
             return data
         except Exception as err:
-            _LOGGER.debug("Error updating data: %s", err)  # Cambiato da error a debug
-            raise
+            _LOGGER.debug("Error updating data: %s", err)
+            raise UpdateFailed(err)
