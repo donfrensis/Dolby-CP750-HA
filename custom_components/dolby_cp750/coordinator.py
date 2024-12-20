@@ -6,8 +6,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     CoordinatorEntity,
+    UpdateFailed  # Importiamo da qui invece che da exceptions
 )
-from homeassistant.exceptions import UpdateFailed
 
 from .const import DOMAIN, DolbyCP750Protocol
 
