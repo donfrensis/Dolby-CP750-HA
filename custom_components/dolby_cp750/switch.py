@@ -34,7 +34,6 @@ async def async_setup_entry(
         )
     ]
 
-    # Add power switch if configured
     if power_switch:
         entities.append(
             DolbyCP750Power(
@@ -69,8 +68,12 @@ class DolbyCP750Mute(CoordinatorEntity, SwitchEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{coordinator.protocol.host}",
         )
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.protocol.available
 
     @property
     def is_on(self) -> bool | None:
@@ -120,7 +123,6 @@ class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{coordinator.protocol.host}",
         )
 
     @property
@@ -134,25 +136,4 @@ class DolbyCP750Power(CoordinatorEntity, SwitchEntity):
         """Return True if device is on."""
         if not self.available:
             return None
-        state = self._hass.states.get(self._power_switch)
-        return state.state == STATE_ON
-
-    async def async_turn_on(self, **kwargs) -> None:
-        """Turn on the device."""
-        await self._hass.services.async_call(
-            "switch", 
-            "turn_on", 
-            {"entity_id": self._power_switch},
-            blocking=True
-        )
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_off(self, **kwargs) -> None:
-        """Turn off the device."""
-        await self._hass.services.async_call(
-            "switch", 
-            "turn_off", 
-            {"entity_id": self._power_switch},
-            blocking=True
-        )
-        await self.coordinator.async_request_refresh()
+        state = self

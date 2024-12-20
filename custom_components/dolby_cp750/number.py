@@ -57,8 +57,12 @@ class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{coordinator.protocol.host}",
         )
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.protocol.available
 
     @property
     def native_value(self) -> float | None:
@@ -70,7 +74,6 @@ class DolbyCP750Fader(CoordinatorEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Set the fader level."""
         try:
-            # Assicuriamoci che il valore sia un intero nel range corretto
             int_value = round(max(0, min(100, value)))
             await self.coordinator.protocol.send_command(f"cp750.sys.fader {int_value}")
             await self.coordinator.async_request_refresh()

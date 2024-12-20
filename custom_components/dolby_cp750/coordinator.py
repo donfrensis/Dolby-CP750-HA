@@ -35,9 +35,16 @@ class DolbyCP750Coordinator(DataUpdateCoordinator):
         """Fetch data from CP750."""
         # Prima controlla se il dispositivo è acceso
         if not await self.protocol._check_power_switch():
-            # Se è spento, restituisci None invece di sollevare UpdateFailed
-            # Questo farà passare tutte le entità a "non disponibile"
-            return None
+            # Se è spento, restituisci un dizionario con valori vuoti
+            return {
+                "fader": None,
+                "input": None,
+                "mute": None,
+                "dig_1_valid": None,
+                "dig_2_valid": None,
+                "dig_3_valid": None,
+                "dig_4_valid": None,
+            }
 
         try:
             # Se è acceso, procedi con il normale aggiornamento
@@ -57,5 +64,5 @@ class DolbyCP750Coordinator(DataUpdateCoordinator):
 
             return data
         except Exception as err:
-            _LOGGER.debug("Error updating data: %s", err)  # Manteniamo debug invece di error
-            return None  # Anche qui restituiamo None invece di sollevare l'eccezione
+            _LOGGER.debug("Error updating data: %s", err)
+            return None

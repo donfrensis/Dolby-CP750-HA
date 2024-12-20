@@ -28,7 +28,6 @@ async def async_setup_entry(
     name = hass.data[DOMAIN][config_entry.entry_id]["name"]
     unique_id = config_entry.unique_id or config_entry.entry_id
 
-    # Create sensors for digital inputs 1-4
     entities = [
         DolbyCP750DigitalInput(
             coordinator,
@@ -57,7 +56,7 @@ class DolbyCP750DigitalInput(CoordinatorEntity, BinarySensorEntity):
         self._input_number = input_number
         self._attr_name = f"Digital {input_number} Valid"
         self._attr_unique_id = f"{unique_id}_dig_{input_number}_valid"
-        self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+        self._attr_device_class = BinarySensorDeviceClass.RUNNING
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, unique_id)},
@@ -65,6 +64,11 @@ class DolbyCP750DigitalInput(CoordinatorEntity, BinarySensorEntity):
             manufacturer="Dolby",
             model="CP750",
         )
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.protocol.available
 
     @property
     def is_on(self) -> bool | None:

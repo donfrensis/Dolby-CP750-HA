@@ -57,8 +57,12 @@ class DolbyCP750InputSelect(CoordinatorEntity, SelectEntity):
             name=name,
             manufacturer="Dolby",
             model="CP750",
-            configuration_url=f"http://{coordinator.protocol.host}",
         )
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.protocol.available
 
     @property
     def current_option(self) -> str | None:

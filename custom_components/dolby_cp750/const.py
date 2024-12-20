@@ -43,36 +43,42 @@ class DolbyCP750Protocol:
         power_state = self.hass.states.get(self._power_switch)
         if not power_state:
             _LOGGER.warning("Configured power switch %s not found", self._power_switch)
-            return True
+            return False  # Cambiato da True a False - se non troviamo lo switch, consideriamo il dispositivo non disponibile
         
         return power_state.state == STATE_ON
 
     @property
     def available(self) -> bool:
         """Return True if device is available."""
-        return self._connected
+        return self._connected and self._writer is not None
 
     async def connect(self) -> None:
         """Establish connection to the device."""
         if not await self._check_power_switch():
             self._connected = False
-            return
+            raise ConnectionError("Device is powered off")
 
         try:
             self._reader, self._writer = await asyncio.open_connection(self.host, self.port)
             self._connected = True
         except Exception as err:
             self._connected = False
+            self._reader = None
+            self._writer = None
             raise ConnectionError(f"Failed to connect: {err}")
 
     async def disconnect(self) -> None:
         """Close the connection."""
-        if self._writer:
-            self._writer.close()
-            await self._writer.wait_closed()
-            self._writer = None
-            self._reader = None
         self._connected = False
+        if self._writer:
+            try:
+                self._writer.close()
+                await self._writer.wait_closed()
+            except Exception as err:
+                _LOGGER.debug("Error during disconnect: %s", err)
+            finally:
+                self._writer = None
+                self._reader = None
 
     async def send_command(self, command: str) -> str:
         """Send command and return response."""
@@ -81,19 +87,15 @@ class DolbyCP750Protocol:
             raise ConnectionError("Device is powered off")
 
         try:
-            # Se non siamo connessi, proviamo a connetterci
             if not self._writer:
                 await self.connect()
 
-            # Send command with newline
             self._writer.write(f"{command}\r\n".encode())
             await self._writer.drain()
 
-            # Read response
             response = await asyncio.wait_for(self._reader.readline(), timeout=2.0)
             response_text = response.decode().strip()
         
-            # Se la risposta è vuota, riconnettiamo e riproviamo una volta
             if not response_text:
                 _LOGGER.debug("Empty response received, trying to reconnect...")
                 await self.disconnect()
@@ -113,4 +115,4 @@ class DolbyCP750Protocol:
         except Exception as err:
             self._connected = False
             await self.disconnect()
-            raise ConnectionError(f"Command failed: {err}")            
+            raise ConnectionError(f"Command failed: {err}")

@@ -16,8 +16,8 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, DolbyCP750Protocol  # Aggiungiamo l'importazione qui
-from .coordinator import DolbyCP750Coordinator # Aggiungiamo anche questa
+from .const import DOMAIN, DolbyCP750Protocol
+from .coordinator import DolbyCP750Coordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,30 +31,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Dolby CP750 from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    # Create protocol and coordinator
     protocol = DolbyCP750Protocol(
         hass,
         entry.data[CONF_HOST],
         entry.data.get(CONF_PORT, DEFAULT_PORT),
         entry.data.get("power_switch")
     )
-    
+
     coordinator = DolbyCP750Coordinator(
         hass,
         protocol,
         entry.data.get(CONF_NAME, DEFAULT_NAME)
     )
+
+    # Prima connessione e aggiornamento dati iniziale
+    await coordinator.async_config_entry_first_refresh()
     
-    # Store configuration data
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
+        "protocol": protocol,
         "host": entry.data[CONF_HOST],
         "port": entry.data.get(CONF_PORT, DEFAULT_PORT),
         "name": entry.data.get(CONF_NAME, DEFAULT_NAME),
         "power_switch": entry.data.get("power_switch"),
     }
 
-    # Load platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
